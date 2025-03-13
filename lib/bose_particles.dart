@@ -1,8 +1,10 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:chandrasekhar/chandrasekhar.dart';
 import 'package:flutter/material.dart';
-import 'package:game_engine/game_engine.dart';
+import 'package:ramanujan/ramanujan.dart';
+import 'package:vector_canvas/vector_canvas.dart';
 
 class EmitterComponent extends Component implements NeedsTick {
   ComponentContext? _ctx;
@@ -15,7 +17,7 @@ class EmitterComponent extends Component implements NeedsTick {
     double speed = 1,
     ParticlePainter? particlePainter,
   }) : _speed = speed,
-       _particlePainter = FairyDustParticlePainter();
+       _particlePainter = particlePainter ?? CircularFairyDustParticlePainter();
 
   @override
   void render(Canvas canvas) {
@@ -56,31 +58,92 @@ abstract class ParticlePainter {
   void paintParticle(Canvas canvas, Particle particle);
 }
 
-class FairyDustParticlePainter implements ParticlePainter {
-  double _size = 5;
+class CircularFairyDustParticlePainter implements ParticlePainter {
+  final P glow;
+  final P glowScale;
+  final P glowOffset;
+  final NormalizedMapper? glimmer;
+
+  CircularFairyDustParticlePainter({
+    this.glow = const P(5, 5),
+    this.glowScale = const P(1, 1),
+    this.glowOffset = P.zero,
+    this.glimmer,
+  });
 
   @override
   void paintParticle(Canvas canvas, Particle particle) {
-    /*canvas.drawCircle(
-      particle.position.o,
-      3,
-      Paint()
-        ..color = Colors.white.withValues(alpha: 0.8)
-        ..imageFilter = ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-    );*/
+    double size = particle.size.x;
+    if (size <= 0) return;
+    {
+      double glowSize = size + 1;
+      if (glimmer != null) {
+        glowSize += glimmer!(particle.lifePercentage);
+        // glowXSize *= glimmer!(particle.lifePercentage);
+        // glowYSize *= glimmer!(particle.lifePercentage);
+      }
+      canvas.drawCircle(
+        particle.position.o + glowOffset.o,
+        glowSize,
+        Paint()
+          ..color = Colors.orangeAccent.withAlpha(150)
+          ..imageFilter = ImageFilter.blur(sigmaX: glow.x, sigmaY: glow.y),
+      );
+    }
     canvas.drawCircle(
       particle.position.o,
-      _size + 1 * ((particle.lifePercentage * 100) % 10) / 10,
-      Paint()
-        ..color = Colors.yellowAccent
-        ..imageFilter = ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+      size / 2,
+      Paint()..color = Colors.orangeAccent,
     );
-    canvas.drawCircle(
-      particle.position.o,
-      _size / 2,
-      Paint()
-        ..color = Colors.yellowAccent
-        // ..imageFilter = ImageFilter.blur(sigmaX: 1, sigmaY: 1),
+  }
+}
+
+class LineFairyDustParticlePainter implements ParticlePainter {
+  final P glow;
+  final P glowScale;
+  final P glowOffset;
+  final NormalizedMapper? glimmer;
+
+  LineFairyDustParticlePainter({
+    this.glow = const P(5, 5),
+    this.glowScale = const P(1, 1),
+    this.glowOffset = P.zero,
+    this.glimmer,
+  });
+
+  @override
+  void paintParticle(Canvas canvas, Particle particle) {
+    if (particle.size.x == 0 || particle.size.y == 0) return;
+    final angle = (Radian(particle.angle) - pi).value;
+    {
+      double glowSize = particle.size.y + 1;
+      if (glimmer != null) {
+        glowSize += glimmer!(particle.lifePercentage);
+        // glowXSize *= glimmer!(particle.lifePercentage);
+        // glowYSize *= glimmer!(particle.lifePercentage);
+      }
+      final line = LineSegment(
+        particle.position,
+        P.onCircle(angle, glowSize, particle.position),
+      );
+      LineComponent.paintLineSegment(
+        canvas,
+        line,
+        strokePaint:
+            Paint()
+              ..color = Colors.orangeAccent.withAlpha(255)
+              ..strokeWidth = particle.size.x + 1
+              ..imageFilter = ImageFilter.blur(sigmaX: glow.x, sigmaY: glow.y),
+      );
+    }
+    final line = LineSegment(
+      particle.position,
+      P.onCircle(angle, particle.size.y, particle.position),
+    );
+    LineComponent.paintLineSegment(
+      canvas,
+      line,
+      stroke: Stroke(color: Colors.orangeAccent, strokeWidth: particle.size.x),
     );
   }
 }
