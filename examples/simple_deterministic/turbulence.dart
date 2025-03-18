@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:ramanujan/ramanujan.dart';
 import 'package:vector_canvas/vector_canvas.dart';
 
-import 'template.dart';
+import '../template.dart';
 
 void main() {
   runApp(const MyApp(MyHomePage()));
@@ -21,24 +21,22 @@ class _MyHomePageState extends State<MyHomePage> {
   final emitter = DeterministicEmitter(
     // surface: LineEmitterSurface(P(0, 0), P(100, 0)),
     surface: PointEmitterSurface(P(0, 0)),
-    emissionInterval: Duration(milliseconds: 5000),
-    lifetime: RandomScaledDuration(Duration(milliseconds: 10000)),
-    /*lifetime: RandomScaledDuration(
+    emissionInterval: Duration(milliseconds: 500),
+    particlesPerInterval: RandomInt(1),
+    lifetime: RandomScaledDuration(
       Duration(seconds: 3),
       randomize: NormalizedDoubleRange(0.4, 1.0),
-    ),*/
-    particlesPerInterval: RandomInt(1),
-    useEmittedAngle: false,
-    speedMultiplier: RandomDouble(0.5),
-    angle: RandomDouble(
-      45.toRadian,
-      randomize: DoubleRange(-15.toRadian, 15.toRadian),
     ),
-    turbulence: glimmerAbs(10),
-    turbulenceScale: RandomDouble(35),
-    size: RandomPoint(P(5, 10)),
-    curve: NewtonianDeterministicParticleCurve(
-      gravity: -600,
+    useEmittedAngle: false,
+    angle: RandomDouble(
+      90.toRadian,
+      // randomize: DoubleRange(-15.toRadian, 15.toRadian),
+    ),
+    speedMultiplier: RandomDouble(1),
+    size: RandomPoint(P(5, 10), randomizeX: DoubleRange(-3, 3)),
+    turbulence: glimmer(5),
+    turbulenceScale: RandomDouble(25),
+    curve: SimpleDeterministicParticleCurve(
       // velocityX: easeInNormalizedMapper,
       // velocityY: easeInNormalizedMapper,
     ),
@@ -57,7 +55,9 @@ class _MyHomePageState extends State<MyHomePage> {
       glimmer: glimmer(3, max: 3),
     ),
   );
-  late final Component _comp = _emitterComponent;
+  late final Component _comp = TransformComponent([
+    _emitterComponent,
+  ], Affine2d(translateX: 100, translateY: 100).matrix4dColMajor);
 
   @override
   Widget build(BuildContext context) {
@@ -73,11 +73,8 @@ class _MyHomePageState extends State<MyHomePage> {
                       ? centeredYUpWith(translate: viewport.center)
                       : centeredYDownWith(translate: viewport.center),
 
-              color: Colors.white,
-              component: LayerComponent([
-                AxisComponent(viewport, yUp: yUp),
-                _comp,
-              ]),
+              color: Colors.black,
+              component: _comp,
               onResize: (size) {
                 setState(() {
                   viewport = R.centerAt(

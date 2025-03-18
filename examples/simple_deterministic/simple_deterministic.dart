@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:ramanujan/ramanujan.dart';
 import 'package:vector_canvas/vector_canvas.dart';
 
-import 'template.dart';
+import '../template.dart';
 
 void main() {
   runApp(const MyApp(MyHomePage()));
